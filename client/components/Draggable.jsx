@@ -6,7 +6,6 @@ const POSITION = {
 }
 
 export default function Draggable({children, parentRef, childRef}) {
-
   const [state, setState] = useState({
     isDragging: false,
     origin: POSITION,
@@ -14,15 +13,11 @@ export default function Draggable({children, parentRef, childRef}) {
     boxOrigin: POSITION
   });
 	
-  const handleDragStart = (e) => {
-    // let dragImgEl = document.createElement('span')
-    // dragImgEl.setAttribute('style','position:absolute; display:block; top:0; left:0; width:0; height:0;')
-    // document.body.appendChild(dragImgEl)
-    // e.DataTransfer.setDragImage(dragImgEl,0,0)
+  const handleDragStart = ({clientX, clientY}) => {
     setState(state => ({
       ...state,
       isDragging: true,
-      origin: {x: e.clientX, y: e.clientY},
+      origin: {x: clientX, y: clientY},
     }));
     // console.log('start',state)
   }
@@ -31,12 +26,14 @@ export default function Draggable({children, parentRef, childRef}) {
     e.preventDefault()
 
     const { offsetWidth, offsetHeight } = parentRef.current
+    const childEl = childRef.current
+    
     const translation = {
       x: e.clientX - state.origin.x + state.boxOrigin.x, 
       y: e.clientY - state.origin.y + state.boxOrigin.y
     };
-    const childEl = childRef.current
 
+    //keep dragged box inside the boundary
     if(translation.x < 0){
       translation.x = 0
     } 
@@ -50,6 +47,10 @@ export default function Draggable({children, parentRef, childRef}) {
     if(translation.y > offsetHeight - childEl.offsetHeight){
       translation.y = offsetHeight - childEl.offsetHeight
     }
+    // prevent unexpected {x:0,y:0}
+    if(!(translation.x || translation.y)){
+      return
+    }
 
     setState(state => ({
       ...state,
@@ -58,20 +59,38 @@ export default function Draggable({children, parentRef, childRef}) {
   }
 	
   const handleDragEnd = ({clientX, clientY}) => {
-    const translation = {
-      x:clientX - state.origin.x + state.boxOrigin.x,
-      y:clientY - state.origin.y + state.boxOrigin.y
+    const { offsetLeft, offsetTop, offsetWidth, offsetHeight } = parentRef.current
+    const childEl = childRef.current
+    
+    let fixedClientX = clientX
+    let fixedClientY = clientY
+
+    // keep position when cursor out of boundary
+    if(fixedClientX < offsetLeft){
+      fixedClientX = offsetLeft
     }
 
-    if(clientX || clientY){
+    if(fixedClientY < offsetTop){
+      fixedClientY = offsetTop
+    } 
+    if(fixedClientX > offsetLeft + offsetWidth - childEl.offsetWidth){
+      fixedClientX = offsetLeft + offsetWidth - childEl.offsetWidth
+    }
+
+    if(fixedClientY > offsetTop + offsetHeight - childEl.offsetHeight){
+      fixedClientY = offsetTop + offsetHeight - childEl.offsetHeight
+    }
+
+    const translation = {
+      x:fixedClientX - state.origin.x + state.boxOrigin.x,
+      y:fixedClientY - state.origin.y + state.boxOrigin.y
+    }
+
       setState({
         ...state,
         isDragging: false,
         boxOrigin: translation,
       })
-    }
-		// console.log('end',state)
-    // onDragEnd();
   }
 	
   useEffect(() => {
