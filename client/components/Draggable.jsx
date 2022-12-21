@@ -1,4 +1,4 @@
-import React, {useState, useMemo, useEffect, useCallback } from 'react'
+import React, {useState, useMemo, useEffect } from 'react'
 
 const POSITION = {
   x:0,
@@ -23,7 +23,6 @@ export default function Draggable({children, parentRef, childRef}) {
  
   const handleDrag = (e) => {
     e.preventDefault()
-
     const { offsetWidth, offsetHeight } = parentRef.current
     const childEl = childRef.current
     const translation = {
@@ -90,6 +89,46 @@ export default function Draggable({children, parentRef, childRef}) {
         boxOrigin: translation,
       })
   }
+
+  const handleResize = (e) => {
+    const { innerWidth, innerHeight } = e.currentTarget
+    const boundaries = {
+      left: parseInt( innerWidth * 0.1 ),
+      right: parseInt( innerWidth * 0.9 ),
+      top: parseInt( innerHeight * 0.1 ),
+      bottom: parseInt( innerHeight * 0.9 )
+    }
+
+    const child = document.getElementsByClassName("child")
+    const { left ,right, top, bottom } = child[0].getBoundingClientRect()
+    const childEl = childRef.current
+    const parentEl = parentRef.current
+
+    let childPosition = {
+      x: left - parentEl.offsetLeft,
+      y: top - parentEl.offsetTop
+    }
+
+    // keep child in parent div when window resizing
+    if(left < boundaries.left ){
+      childPosition.x = 0
+    }
+    if(right > boundaries.right - childEl.offsetWidth ){
+      childPosition.x = parentEl.offsetWidth - childEl.offsetWidth
+    }
+    if(top < boundaries.top ){
+      childPosition.y = 0
+    }
+    if(bottom > boundaries.bottom - childEl.offsetHeight ){
+      childPosition.y = parentEl.offsetHeight - childEl.offsetHeight
+    }
+
+    setState({
+      ...state,
+      translation: childPosition,
+      boxOrigin: childPosition
+    })
+  }
  
   useEffect(() => {
     if(childRef){
@@ -100,7 +139,9 @@ export default function Draggable({children, parentRef, childRef}) {
         y: childRef.current.offsetTop
       }
     })
+    window.addEventListener("resize",handleResize)
   }
+  return () => window.removeEventListener("resize", handleResize)
   }, []);
  
   const styles = useMemo(() => ({

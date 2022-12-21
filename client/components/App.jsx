@@ -9,9 +9,9 @@ const App = () => {
 
   return (
     <BodyContainer onDragOver={(e)=> e.preventDefault()} inside={inside}>
-      <Container ref={parentRef} onMouseOut={()=> setInside(false)} onMouseOver={()=> setInside(true)}>
+      <Container className="parent" ref={parentRef} onMouseOut={()=> setInside(false)} onMouseOver={()=> setInside(true)}>
             <Draggable parentRef={parentRef} childRef={childRef}>
-              <Rect ref={childRef} >
+              <Rect className="child" ref={childRef} >
               </Rect>
             </Draggable>
       </Container>
